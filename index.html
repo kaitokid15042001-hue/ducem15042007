@@ -71,6 +71,74 @@ document.querySelectorAll('[data-next]').forEach(b=>b.addEventListener('click',(
 document.querySelectorAll('[data-back]').forEach(b=>b.addEventListener('click',()=>{sync();showStep(current-1)}));
 document.querySelectorAll('[data-group]').forEach(group=>group.querySelectorAll('.choice').forEach(btn=>btn.addEventListener('click',()=>{group.querySelectorAll('.choice').forEach(x=>{x.classList.remove('selected');x.setAttribute('aria-pressed','false')});btn.classList.add('selected');btn.setAttribute('aria-pressed','true');state[group.dataset.group]=btn.dataset.value;})));
 $('date').min=new Date().toLocaleDateString('en-CA');['date','time','otherFood','note'].forEach(id=>$(id).addEventListener('input',sync));
-$('confirm').addEventListener('click',()=>{sync();updateReview();$('finalSummary').innerHTML='';[['📅 Ngày',$('reviewDate').textContent],['🕒 Thời gian',$('reviewTime').textContent],['🍓 Món ăn',$('reviewFood').textContent],['📍 Địa điểm',$('reviewPlace').textContent],['💬 Lời nhắn',$('reviewNote').textContent]].forEach(([label,value])=>{const row=document.createElement('div');row.className='summary-row';const strong=document.createElement('strong');strong.textContent=label;const span=document.createElement('span');span.textContent=value;row.append(strong,span);$('finalSummary').append(row)});showStep(5);});
+<script>
+const steps=[...document.querySelectorAll('.step')],bars=[...document.querySelectorAll('.progress span')];let current=0;
+const state={date:'',time:'',food:'',foodOther:'',place:'',note:''};const $=id=>document.getElementById(id);
+const noTexts=['Không ạ 🙈','Bạn suy nghĩ lại nha 🥺','Một buổi hẹn thôi mà 💗','Anh sẽ chuẩn bị thật chu đáo 🥹','Cho anh một cơ hội nhé 🌷','Nút đồng ý đang chờ em đó 💞'];
+let noCount=0,yesScale=1;
+$('noBtn').addEventListener('click',()=>{
+ noCount++;yesScale=Math.min(yesScale*1.28,5.5);
+ $('yesBtn').style.transform=`scale(${yesScale})`;
+ $('yesBtn').style.zIndex='2';
+ $('yesBtn').style.position='relative';
+ $('noBtn').style.transform=`scale(${Math.max(.45,1-noCount*.07)})`;
+ $('noBtn').textContent=noTexts[Math.min(noCount,noTexts.length-1)];
+ $('plea').textContent='Hihi, nút “Đồng ý” đang to lên rồi nè… bấm đồng ý nha? 💕';
+});
+function showStep(n){current=Math.max(0,Math.min(n,steps.length-1));steps.forEach((s,i)=>s.classList.toggle('active',i===current));bars.forEach((b,i)=>b.classList.toggle('active',i<Math.min(current+1,5)));document.querySelector('.progress').style.display=current===5?'none':'flex';if(current===4)updateReview();window.scrollTo({top:0,behavior:'smooth'});}
+function sync(){state.date=$('date').value;state.time=$('time').value;state.foodOther=$('otherFood').value.trim();state.note=$('note').value.trim();}
+function updateReview(){sync();$('reviewDate').textContent=state.date?new Date(state.date+'T12:00:00').toLocaleDateString('vi-VN',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'}):'Chưa chọn';$('reviewTime').textContent=state.time||'Linh hoạt';$('reviewFood').textContent=state.food==='Món khác'?(state.foodOther||'Món khác (chưa ghi cụ thể)'):(state.food||'Chưa chọn');$('reviewPlace').textContent=state.place||'Chưa chọn';$('reviewNote').textContent=state.note||'Chưa có lời nhắn';}
+$('yesBtn').addEventListener('click',()=>showStep(1));
+document.querySelectorAll('[data-next]').forEach(b=>b.addEventListener('click',()=>{sync();if(current===1&&!state.date){$('date').focus();$('date').reportValidity();return;}if(current===2&&!state.food){alert('Em chọn món ăn trước nha 💗');return;}if(current===3&&!state.place){alert('Em chọn địa điểm trước nha 🌷');return;}showStep(current+1);}));
+document.querySelectorAll('[data-back]').forEach(b=>b.addEventListener('click',()=>{sync();showStep(current-1)}));
+document.querySelectorAll('[data-group]').forEach(group=>group.querySelectorAll('.choice').forEach(btn=>btn.addEventListener('click',()=>{group.querySelectorAll('.choice').forEach(x=>{x.classList.remove('selected');x.setAttribute('aria-pressed','false')});btn.classList.add('selected');btn.setAttribute('aria-pressed','true');state[group.dataset.group]=btn.dataset.value;})));
+$('date').min=new Date().toLocaleDateString('en-CA');['date','time','otherFood','note'].forEach(id=>$(id).addEventListener('input',sync));
+
+// PHẦN GỬI THÔNG TIN VỀ TELEGRAM KHI BẤM XÁC NHẬN
+$('confirm').addEventListener('click',()=>{
+  sync();
+  updateReview();
+  
+  $('finalSummary').innerHTML='';
+  const summaryData = [
+    ['📅 Ngày', $('reviewDate').textContent],
+    ['🕒 Thời gian', $('reviewTime').textContent],
+    ['🍓 Món ăn', $('reviewFood').textContent],
+    ['📍 Địa điểm', $('reviewPlace').textContent],
+    ['💬 Lời nhắn', $('reviewNote').textContent]
+  ];
+  
+  summaryData.forEach(([label,value])=>{
+    const row=document.createElement('div');row.className='summary-row';
+    const strong=document.createElement('strong');strong.textContent=label;
+    const span=document.createElement('span');span.textContent=value;
+    row.append(strong,span);$('finalSummary').append(row);
+  });
+
+  // Gửi dữ liệu qua Telegram Bot API
+  const botToken = 'YOUR_BOT_TOKEN'; // <-- Thay token của bạn vào đây
+  const chatId = 'YOUR_CHAT_ID';       // <-- Thay chat ID của bạn vào đây
+  
+  const message = `💖 CÓ LỜI MỜI ĐI CHƠI ĐƯỢC CHẤP NHẬN!\n\n` +
+                  `📅 Ngày: ${$('reviewDate').textContent}\n` +
+                  `🕒 Thời gian: ${$('reviewTime').textContent}\n` +
+                  `🍓 Món ăn: ${$('reviewFood').textContent}\n` +
+                  `📍 Địa điểm: ${$('reviewPlace').textContent}\n` +
+                  `💬 Lời nhắn: ${$('reviewNote').textContent}`;
+
+  if(botToken !== 'YOUR_BOT_TOKEN') {
+    fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message
+      })
+    }).catch(err => console.log(err));
+  }
+
+  showStep(5);
+});
+
 $('editAgain').addEventListener('click',()=>showStep(1));
-</script></body></html>
+</script>
